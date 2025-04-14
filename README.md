@@ -104,7 +104,7 @@ Classification Report:
 | + Ensemble (ΔLL) | + ΔLL score | ✅ | ✅ | 82.3% | 0.7828 | 0.4242 |
 | Transformer (MLM+CLS) | 256 bp | ✅ | ✅ | 82.0% | ~ | 0.00 (imbalanced) |
 
-The low F1 score is due to class imbalance, since benign variants dominate, the model rarely predicts pathogenic ones, leading to poor precision and recall for that class.
+**The low F1 score is due to class imbalance, since benign variants dominate, the model rarely predicts pathogenic ones, leading to poor precision and recall for that class.**
 ---
 
 ##  How to Run
@@ -146,6 +146,8 @@ Each model includes:
 | Context-rich & scalable | Transformers |
 
 ---
+## Citation
+
 Benegas, G., Albors, C., Aw, A. J., Ye, C., & Song, Y. S. (2024).
 A DNA language model based on multispecies alignment predicts the effects of genome-wide variants.
 Nature Biotechnology.
