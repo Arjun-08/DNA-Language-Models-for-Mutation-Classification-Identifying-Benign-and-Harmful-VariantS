@@ -1,5 +1,5 @@
 
-#  DNA Variant Classification (Benign vs. Pathogenic)
+#  DNA Mutation Classification (Benign vs. Pathogenic variants)
 
 This repository contains **three distinct deep learning approaches** to classify human single-nucleotide variants (SNVs) from ClinVar as either **Benign (0)** or **Pathogenic (1)** using the GRCh38 reference genome. All models are implemented in PyTorch, with transformers trained using masked language modeling (MLM) and fine-tuning.
 
