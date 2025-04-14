@@ -1,85 +1,118 @@
 
-#  DNA Variant Classifier with CNN (Pathogenic vs. Benign)
+#  DNA Variant Classification (Benign vs. Pathogenic)
 
-This project implements a deep learning pipeline using a 1D Convolutional Neural Network (CNN) to classify single-nucleotide variants (SNVs) in DNA sequences as **Pathogenic (1)** or **Benign (0)** based on sequence context from the GRCh38 human reference genome and ClinVar annotations.
-
----
-
-##  Dataset
-
-### 1. [ClinVar VCF (GRCh38)](https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz)
-- Annotated variants with clinical significance (Benign, Pathogenic, etc.)
-
-### 2. [GRCh38 Reference Genome (FASTA)](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz)
-- Used to extract 101bp surrounding sequence for each SNV.
-
-### Extraction Process
-- Filter only **SNVs**
-- Extract a 101bp sequence centered on the variant
-- Replace the central base (reference) with the alternate allele
-- Label:
-  - `"Pathogenic"` → `1`
-  - `"Benign"` → `0`
-- Limit to `MAX_VARIANTS = 5000` for quick training
+This repository contains **three distinct deep learning approaches** to classify human single-nucleotide variants (SNVs) from ClinVar as either **Benign (0)** or **Pathogenic (1)** using the GRCh38 reference genome. All models are implemented in PyTorch, with transformers trained using masked language modeling (MLM) and fine-tuning.
 
 ---
 
-##  Model
+##  Dataset Overview
 
-A 1D CNN architecture implemented in PyTorch:
+| Source | Details |
+|--------|---------|
+| **ClinVar VCF (GRCh38)** | ~5.5M total variants |
+| **Used in this project** | Filtered 5000 SNVs (Pathogenic or Benign only) |
+| **Reference genome** | [GCA_000001405.15_GRCh38](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/...) |
+| **Window size** | ±50 bp (CNN models), ±128 bp (Transformer model) |
+| **Context length** | 101 bp (CNNs), 256 tokens (GPN-style Transformer) |
 
-```
-Input: One-hot encoded sequence (4 x 101)
-
-Conv1D (4 → 64) + ReLU + MaxPool
-Conv1D (64 → 128) + ReLU + MaxPool
-Flatten → Dense (128 units) → Dropout
-Output: Sigmoid (1 unit)
-```
-
-- Loss: Binary Cross Entropy
-- Optimizer: Adam (`lr=0.001`)
-- Epochs: 10
-- Batch Size: 32
+We limit to **5000 SNVs** for practical training in Colab (speed + memory) and to test models efficiently under real-world constraints.
 
 ---
 
-##  Training Progress
+##  Model Implementations
 
+###  Model 1: CNN on One-Hot Encoded ALT Sequences
+
+- Uses only **alternate allele sequence** (after mutation inserted).
+- Input: 101bp one-hot encoded sequence.
+- Architecture: 2-layer CNN with dense classifier.
+- Loss: `BCELoss`
+- Optimizer: Adam
+
+ **Performance**:
 ```
-Epoch 01 - Loss: 0.5231 - Train Accuracy: 79.17%
-Epoch 05 - Loss: 0.3462 - Train Accuracy: 83.90%
-Epoch 10 - Loss: 0.1104 - Train Accuracy: 95.70%
+Train Accuracy: 95.7%
+Test Accuracy: 77.6%
+ROC AUC: 0.7497
+F1 Score (Pathogenic): 0.4766
 ```
+
+ **Strengths**:
+- Fast to train
+- Simple, interpretable model
+- Baseline for comparison
 
 ---
 
-##  Evaluation
+###  Model 2: CNN on Paired REF+ALT Sequences + Ensemble (with ΔLL)
 
-On a 20% test split (1000 samples):
+- Concatenates both **reference** and **alternate** sequences → [4 x 202]
+- Trained a CNN on this paired representation
+- Supports optional delta log-likelihood input from external models (e.g., GPN, ESM)
+- Combines CNN + ΔLL using logistic regression (ensemble)
 
+ **Best Performance (Ensemble)**:
 ```
-Test Accuracy: 77.60%
-ROC AUC Score: 0.7497
+CNN Test Accuracy: 81.3%
+ROC AUC: 0.7635
+F1 (Pathogenic): 0.4776
 
-Precision/Recall (Benign):     0.8765 / 0.8394
-Precision/Recall (Pathogenic): 0.4416 / 0.5178
+Ensemble Accuracy: 82.3%
+Ensemble AUC: 0.7828
 ```
 
- The model performs well on benign examples, but struggles to recall pathogenic variants — likely due to class imbalance.
+ **Strengths**:
+- Improved performance with both alleles
+- ΔLL scores boost final metrics
+- More realistic modeling of variant effect
 
 ---
 
-##  Example Prediction
+###  Model 3: Transformer-Based MLM + Classification (GPN-Style)
 
-```python
-Input Sequence:
-CACATCGTGCTTCTGGCGTCGTGAACTTCGCGTGCCTCCGCTCGTTTGCAACACGGTTCATTGTCGTGTCCCAGGCGGGCTCAGGCGGGCATCCCATTTAG
+- Implements **masked language model (MLM)** pretraining (like GPN)
+- Custom vocabulary: `"ACGT-?"`, with `?` as `[MASK]`
+- Uses **TransformerEncoder** with 4 layers, 8 heads
+- Fine-tunes a classifier head on pooled embedding
 
-Predicted:
-Probability: 0.8031
-Label: Pathogenic (1)
+ **Pretraining Logs** (MLM on masked sequences from 5000 SNVs):
 ```
+Epoch 1 - MLM Loss: 0.2680
+Epoch 2 - MLM Loss: 0.2228
+Epoch 3 - MLM Loss: 0.2214
+```
+
+ **Fine-tuning Logs** (Classifier on same dataset):
+```
+Epoch 1 - Loss: 0.4837, Accuracy: 81.67%
+Epoch 2 - Loss: 0.4757, Accuracy: 82.05%
+Epoch 3 - Loss: 0.4739, Accuracy: 82.05%
+```
+
+ **Evaluation (on test set)**:
+```
+Final Accuracy: 82.00%
+Classification Report:
+    Benign    → Precision: 0.82, Recall: 1.00
+    Pathogenic → Precision: 0.00, Recall: 0.00 (class imbalance issue)
+```
+
+ **Strengths & Challenges**:
+- Captures full-sequence context like GPN-MSA
+- Benefits from pretraining
+- Underperforms on minority class (Pathogenic) due to imbalance
+- Ideal for further scaling (e.g., with larger variant sets)
+
+---
+
+##  Comparison Table
+
+| Model | Input | Uses REF+ALT? | Pretrained? | Accuracy | AUC | F1 (Pathogenic) |
+|-------|-------|----------------|-------------|----------|-----|-----------------|
+| CNN (ALT only) | 101 bp (ALT) | ❌ | ❌ | 77.6% | 0.7497 | 0.4766 |
+| CNN (REF+ALT) | 101+101 bp | ✅ | ❌ | 81.3% | 0.7635 | 0.4776 |
+| + Ensemble (ΔLL) | + ΔLL score | ✅ | ✅ | 82.3% | 0.7828 | 0.4242 |
+| Transformer (MLM+CLS) | 256 bp | ✅ | ✅ | 82.0% | ~ | 0.00 (imbalanced) |
 
 ---
 
@@ -88,50 +121,44 @@ Label: Pathogenic (1)
 ### 1. Install dependencies
 
 ```bash
-pip install biopython pandas cyvcf2 tqdm scikit-learn matplotlib
+pip install biopython pandas cyvcf2 tqdm scikit-learn matplotlib transformers datasets
 ```
 
-### 2. Download and prepare dataset
+### 2. Run models
 
-```bash
-# Either run the notebook or use:
-python extract_variants.py
-```
-
-### 3. Train the model
-
-```bash
-python train_cnn.py
-```
-
-### 4. Predict on a new sequence
-
-```python
-from predict import predict_single_sequence
-prob, label = predict_single_sequence("ACGT...101bp")
-```
-
-
-
-##  Future Improvements
-
-- Handle class imbalance (SMOTE, focal loss)
-- Use multiple sequence alignment or conservation scores
-- Try Transformer-based DNA models (e.g., DNABERT, GPN-MSA)
-- Fine-tune on ClinVar variants with family history or experimental validation
+- `model1_alt_cnn.ipynb` — Basic CNN on ALT only
+- `model2_pair_ref_alt_ensemble.py` — CNN on paired REF/ALT + ensemble
+- `model3_transformer_mlm_cls.ipynb` — MLM pretraining + Transformer classifier
 
 ---
 
-##  References
+## 📈 Visualizations
 
-- ClinVar Database – NCBI
-- GRCh38 Reference Genome – NCBI
-- PyTorch, BioPython, cyvcf2
+Each model includes:
+- Training/validation loss
+- ROC AUC and PR curves
+- Confusion matrices
+- Ensemble performance (Model 2)
+- MLM loss curves (Model 3)
 
 ---
 
-##  Author
+## 🔬 Why These Models?
+
+| Purpose | Choice |
+|--------|--------|
+| Baseline | Model 1 (simple CNN) |
+| Realistic biological modeling | Model 2 (both REF and ALT) |
+| Language-model style DNA representation | Model 3 (MLM + Transformer) |
+| Speed & interpretability | CNNs |
+| Context-rich & scalable | Transformers |
+
+---
+
+
+
+## 👤 Author
 
 **Arjun Sagar**  
-[GitHub]([https://github.com/](https://github.com/Arjun-08)) • [Email](mailto:nvarjunmani07@gmail.com)
-
+📧 [Email](mailto:nvarjunmani07@gmail.com)  
+🔗 GitHub: [@arjunsagar](https://github.com/arjunsagar)
