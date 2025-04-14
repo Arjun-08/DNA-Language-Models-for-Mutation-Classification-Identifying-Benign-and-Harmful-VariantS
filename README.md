@@ -117,9 +117,9 @@ pip install biopython pandas cyvcf2 tqdm scikit-learn matplotlib transformers da
 
 ### 2. Run models
 
-- `model1_alt_cnn.ipynb` — Basic CNN on ALT only
-- `model2_pair_ref_alt_ensemble.py` — CNN on paired REF/ALT + ensemble
-- `model3_transformer_mlm_cls.ipynb` — MLM pretraining + Transformer classifier
+- `DNA_cnn.ipynb` — Basic CNN on ALT only
+- `DNA_CNN2.ipynb` — CNN on paired REF/ALT + ensemble
+- `DNA_LANGUAGEMODEL.ipynb` — MLM pretraining + Transformer classifier
 
 ---
 
@@ -151,7 +151,7 @@ Each model includes:
 Benegas, G., Albors, C., Aw, A. J., Ye, C., & Song, Y. S. (2024).
 A DNA language model based on multispecies alignment predicts the effects of genome-wide variants.
 Nature Biotechnology.
-https://doi.org/10.1038/s41587-024-02023-1
+[https://doi.org/10.1038/s41587-024-02023-1](https://doi.org/10.1038/s41587-024-02511-w)
 
 @article{benegas2024dna,
   title={A DNA language model based on multispecies alignment predicts the effects of genome-wide variants},
