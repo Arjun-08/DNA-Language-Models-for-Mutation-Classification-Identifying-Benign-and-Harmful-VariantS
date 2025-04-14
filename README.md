@@ -37,10 +37,7 @@ ROC AUC: 0.7497
 F1 Score (Pathogenic): 0.4766
 ```
 
- **Strengths**:
-- Fast to train
-- Simple, interpretable model
-- Baseline for comparison
+ 
 
 ---
 
@@ -61,10 +58,7 @@ Ensemble Accuracy: 82.3%
 Ensemble AUC: 0.7828
 ```
 
- **Strengths**:
-- Improved performance with both alleles
-- ΔLL scores boost final metrics
-- More realistic modeling of variant effect
+
 
 ---
 
@@ -97,11 +91,7 @@ Classification Report:
     Pathogenic → Precision: 0.00, Recall: 0.00 (class imbalance issue)
 ```
 
- **Strengths & Challenges**:
-- Captures full-sequence context like GPN-MSA
-- Benefits from pretraining
-- Underperforms on minority class (Pathogenic) due to imbalance
-- Ideal for further scaling (e.g., with larger variant sets)
+
 
 ---
 
@@ -114,6 +104,7 @@ Classification Report:
 | + Ensemble (ΔLL) | + ΔLL score | ✅ | ✅ | 82.3% | 0.7828 | 0.4242 |
 | Transformer (MLM+CLS) | 256 bp | ✅ | ✅ | 82.0% | ~ | 0.00 (imbalanced) |
 
+The low F1 score is due to class imbalance, since benign variants dominate, the model rarely predicts pathogenic ones, leading to poor precision and recall for that class.
 ---
 
 ##  How to Run
@@ -132,7 +123,8 @@ pip install biopython pandas cyvcf2 tqdm scikit-learn matplotlib transformers da
 
 ---
 
-## 📈 Visualizations
+##  Visualizations 
+(please refer PPT or codes for these)
 
 Each model includes:
 - Training/validation loss
@@ -143,7 +135,7 @@ Each model includes:
 
 ---
 
-## 🔬 Why These Models?
+## Why These Models?
 
 | Purpose | Choice |
 |--------|--------|
@@ -154,11 +146,22 @@ Each model includes:
 | Context-rich & scalable | Transformers |
 
 ---
+Benegas, G., Albors, C., Aw, A. J., Ye, C., & Song, Y. S. (2024).
+A DNA language model based on multispecies alignment predicts the effects of genome-wide variants.
+Nature Biotechnology.
+https://doi.org/10.1038/s41587-024-02023-1
+
+@article{benegas2024dna,
+  title={A DNA language model based on multispecies alignment predicts the effects of genome-wide variants},
+  author={Benegas, Gonzalo and Albors, Carlos and Aw, Alan J and Ye, Chengzhong and Song, Yun S},
+  journal={Nature Biotechnology},
+  year={2024},
+  doi={10.1038/s41587-024-02023-1}
+}
 
 
+##  Contact
 
-## 👤 Author
+If you have any questions or suggestions, please feel free to reach out to me at nvarjunmani07@gmail.com.
 
-**Arjun Sagar**  
-📧 [Email](mailto:nvarjunmani07@gmail.com)  
-🔗 GitHub: [@arjunsagar](https://github.com/arjunsagar)
+
